@@ -105,7 +105,7 @@ if st.button("Ejecutar Simulación"):
     media_robusta = trim_mean(simulaciones, 0.1)
     mediana_simulada = np.median(simulaciones)
 
-    st.subheader("Estadísticas de Simulación")
+    st.subheader("Estadísticas de Simulación (Millones de USD)")
     col1, col2, col3 = st.columns(3)
     col1.metric("Media clásica", f"{media_simulada:,.2f}")
     col2.metric("Media robusta (trimmed)", f"{media_robusta:,.2f}")
