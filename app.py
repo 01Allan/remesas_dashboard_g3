@@ -114,19 +114,19 @@ if st.button("Ejecutar Simulación"):
     # Transformación Box-Cox y simulación con datos transformados (si todos positivos)
     simulaciones_boxcox = None
     lambda_boxcox = None
-    if all(simulaciones > 0):
-        try:
-            boxcox_vals, lambda_boxcox = stats.boxcox(simulaciones) # type: ignore
-            if abs(lambda_boxcox - 1.0) > 0.1:
-                mean_bc = np.mean(boxcox_vals) # type: ignore
-                std_bc = np.std(boxcox_vals)   # type: ignore
-                simulaciones_boxcox = stats.norm.rvs(loc=mean_bc, scale=std_bc, size=len(simulaciones))
-                simulaciones_boxcox = inv_boxcox(simulaciones_boxcox, lambda_boxcox)
-                simulaciones = pd.Series(simulaciones_boxcox)
-        except Exception as e:
-            st.warning(f"Error en transformación Box-Cox: {e}")
-    else:
-        st.warning("La transformación Box-Cox no se puede aplicar porque hay valores negativos o ceros en la simulación.")
+    # Comprobar que todos los valores son estrictamente positivos y la desviación estándar es mayor que cero
+    try:
+        if (simulaciones <= 0).any() or np.std(simulaciones) == 0:
+            raise ValueError("Box-Cox requires all values to be positive and not constant.")
+        boxcox_vals, lambda_boxcox = stats.boxcox(simulaciones) # type: ignore
+        if abs(lambda_boxcox - 1.0) > 0.1:
+            mean_bc = np.mean(boxcox_vals) # type: ignore
+            std_bc = np.std(boxcox_vals)   # type: ignore
+            simulaciones_boxcox = stats.norm.rvs(loc=mean_bc, scale=std_bc, size=len(simulaciones))
+            simulaciones_boxcox = inv_boxcox(simulaciones_boxcox, lambda_boxcox)
+            simulaciones = pd.Series(simulaciones_boxcox)
+    except Exception as e:
+        st.warning(f"Error en transformación Box-Cox: {e}")
     # --- Box-Cox lambda improvement for normality ---
     if lambda_boxcox is not None and isinstance(lambda_boxcox, (float, int)):
         if lambda_boxcox < 0.1:
@@ -159,8 +159,13 @@ if st.button("Ejecutar Simulación"):
     y_hist = hist_kde.get_lines()[0].get_ydata()
     plt.clf()
     sim_kde = sns.kdeplot(x=simulaciones.values, bw_adjust=0.5)
-    x_sim = sim_kde.get_lines()[0].get_xdata()
-    y_sim = sim_kde.get_lines()[0].get_ydata()
+    sim_lines = sim_kde.get_lines()
+    if len(sim_lines) > 0:
+        x_sim = sim_lines[0].get_xdata()
+        y_sim = sim_lines[0].get_ydata()
+    else:
+        x_sim = []
+        y_sim = []
     plt.clf()
 
     fig_density_kde = go.Figure()
