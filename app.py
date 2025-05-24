@@ -105,7 +105,7 @@ if st.button("Ejecutar Simulación"):
     media_robusta = trim_mean(simulaciones, 0.1)
     mediana_simulada = np.median(simulaciones)
 
-    st.subheader("Estadísticas de Simulación (Millones de USD)")
+    st.subheader("Estadísticas de Simulación")
     col1, col2, col3 = st.columns(3)
     col1.metric("Media clásica", f"{media_simulada:,.2f}")
     col2.metric("Media robusta (trimmed)", f"{media_robusta:,.2f}")
@@ -118,14 +118,15 @@ if st.button("Ejecutar Simulación"):
         try:
             boxcox_vals, lambda_boxcox = stats.boxcox(simulaciones) # type: ignore
             if abs(lambda_boxcox - 1.0) > 0.1:
-                # Simular nuevamente con valores transformados
                 mean_bc = np.mean(boxcox_vals) # type: ignore
-                std_bc = np.std(boxcox_vals) # type: ignore
+                std_bc = np.std(boxcox_vals)   # type: ignore
                 simulaciones_boxcox = stats.norm.rvs(loc=mean_bc, scale=std_bc, size=len(simulaciones))
                 simulaciones_boxcox = inv_boxcox(simulaciones_boxcox, lambda_boxcox)
                 simulaciones = pd.Series(simulaciones_boxcox)
         except Exception as e:
             st.warning(f"Error en transformación Box-Cox: {e}")
+    else:
+        st.warning("La transformación Box-Cox no se puede aplicar porque hay valores negativos o ceros en la simulación.")
     # --- Box-Cox lambda improvement for normality ---
     if lambda_boxcox is not None and isinstance(lambda_boxcox, (float, int)):
         if lambda_boxcox < 0.1:
